@@ -6,8 +6,7 @@ public enum Razas
     Namekiano,
     Ice,
     Androide,
-    Humano,
-    Dios
+    Humano
 }
 
 class Sayayin

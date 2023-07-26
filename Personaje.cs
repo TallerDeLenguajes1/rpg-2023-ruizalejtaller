@@ -12,6 +12,8 @@ public class Personaje
     private int nivel;
     private int armadura;
     private int salud;
+    private int energia;
+    private int semillas;
 
     public Razas Tipo { get => tipo; set => tipo = value; }
     public string Nombre { get => nombre; set => nombre = value; }
@@ -23,5 +25,23 @@ public class Personaje
     public int Nivel { get => nivel; set => nivel = value; }
     public int Armadura { get => armadura; set => armadura = value; }
     public int Salud { get => salud; set => salud = value; }
+    public int Energia { get => energia; set => energia = value; }
+    public int Semillas { get => semillas; set => semillas = value; }
+
+    public void Mostrar ()
+    {
+        Console.Clear();
+        Console.WriteLine("\n--- Datos ---");
+        Console.WriteLine("Raza: " + Tipo);
+        Console.WriteLine("Nombre: " + Nombre);
+        Console.WriteLine("Año de Nacimiento: " + Nac + " (Edad: " + Edad + ")");
+
+        Console.WriteLine("\n--- Caracteristicas ---");
+        Console.WriteLine("Destreza: " + Destreza + " /// Fuerza: " + Fuerza + " /// Nivel: " + Nivel);
+        Console.WriteLine("Velocidad: " + Velocidad + " /// Armadura: " + Armadura);
+        Console.WriteLine("Salud: " + Salud + " /// Energia: " + Energia);
+
+        Console.WriteLine("Semillas: " + Semillas);
+    }
 
 }
