@@ -5,8 +5,10 @@ internal class Program
     {
         var Datos = new PersonajesJson();
         var Personajes = new List<Personaje>();
+        string[] Fases = {"Octavos de final", "Cuartos de final", "Semifinal", "Final"};
         string str;
-        int op;
+        int op, fase = 0;
+        bool cont = true;
 
         if(Datos.Existe("Personajes.json"))
         {
@@ -31,16 +33,68 @@ internal class Program
         Console.WriteLine("----------------------");
         Personajes[0].Mostrar();
 
-        Enter();
+        while (fase<4 && cont)
+        {
+            Fase(Fases[fase], Personajes[0], Personajes[1], true);
+            Enter();
         
-        Console.WriteLine("Torneo de las artes marciales");
-        Console.WriteLine("-----------------------------");
-        Console.WriteLine("\nSon los Cuartos de final");
-        Console.WriteLine("\nSe enfrentan " + Personajes[0].Nombre + " vs " + Personajes[1].Nombre);
+            if(Combate(Personajes[0], Personajes[1]))
+            {
+                Personajes.RemoveAt(1);
+                RecSalud(Personajes[0]);
+                cont = true;
 
-        Enter();
+                if (fase == 3)
+                {
+                    Console.WriteLine("\n////////////////////");
+                    Console.WriteLine("//// " + Personajes[0].Nombre + " es el Campeon del Torneo de las Artes Marciales ////");
+                    Console.WriteLine("/////////////////////");
+                } else {
+                    Console.WriteLine("es la fase "+ fase);
+                    Console.WriteLine("\n\n--------------------------------------------------");
+                    Console.WriteLine("1. Presenciar los encuentros restantes de la fase");
+                    Console.WriteLine("2. Ver los ganadores directamente");
+                    Console.WriteLine("Cualquier otra tecla, Salir\n\n");
 
-        Combate(Personajes[0], Personajes[1]);
+                    str = Console.ReadLine();
+
+                    if(int.TryParse(str, out op))
+                    {
+                        switch(op)
+                        {
+                            case 1:
+                                Personajes = ComFases(Personajes, true, Fases[fase]);
+                            break;
+
+                            case 2:
+                                Personajes = ComFases(Personajes, false, Fases[fase]);
+                            break;
+                            
+                            default:
+                                cont = false;
+                            break;
+                        }
+                    } else cont = false;
+                }
+            } else cont = false;
+
+            fase++;
+
+            if (cont && fase<4)
+            {
+                Console.WriteLine("\n\nProxima ronda");
+                Console.WriteLine("-------------");
+
+                for(int j=0; j<Personajes.Count-1; j+=2)
+                {
+                    Console.WriteLine(Personajes[j].Nombre + " vs " + Personajes[j+1].Nombre);
+                }
+
+                Enter();
+            }
+        }
+
+        if(!cont) Console.WriteLine("\n\n¡Juego terminado!");
 
     }
 
@@ -169,16 +223,27 @@ internal class Program
         return Personaje;
     }
 
+    static void Fase(string fase, Personaje Pers_A, Personaje Pers_B, bool ver)
+    {
+        if (ver)
+        {
+            Console.Clear();
+            Console.WriteLine("Torneo de las artes marciales");
+            Console.WriteLine("-----------------------------");
+            Console.WriteLine("\nFase: " + fase);
+        }
+        Console.WriteLine("\nSe enfrentan === " + Pers_A.Nombre + " vs " + Pers_B.Nombre + " === ");
+    }
 
     static void Enter ()
     {
 
-        Console.WriteLine("\nPulse Enter para continuar");
+        Console.WriteLine("\nPulse [Enter] para continuar\n");
         Console.ReadKey();
         Console.Clear();
     }
 
-    static bool Combate(Personaje Personaje_A, Personaje Personaje_B)
+    static bool Combate(Personaje Pers_A, Personaje Pers_B)
     {
         Personaje Ganador;
         int DProvocado = 0;
@@ -186,13 +251,11 @@ internal class Program
         int op;
         bool win = false, turno = false;
 
-        while (Personaje_A.Salud > 0 && Personaje_B.Salud > 0)
+        while (Pers_A.Salud > 0 && Pers_B.Salud > 0)
         {
-            Console.Clear();
-            Console.WriteLine ("-- " +Personaje_A.Nombre + " --   Salud: " + Personaje_A.Salud + "   Energia: " + Personaje_A.Energia);
-            Console.WriteLine ("\n-- " + Personaje_B.Nombre + " -- Salud: " + Personaje_B.Salud + "   Energia: " + Personaje_B.Energia);
+            Valores(Pers_A, Pers_B);
 
-            Console.WriteLine ("\n\n\n1. Atacar   2. Usar Semilla    3. Info Oponente   4. Rendirse");
+            Console.WriteLine ("\n\n\n1. Atacar   2. Usar Semilla    3. Info Oponente   4. Rendirse\n");
             str = Console.ReadLine();
             
 
@@ -201,40 +264,40 @@ internal class Program
                 switch (op)
                 {
                     case 1:
-                        DProvocado = Atacar(Personaje_A, Personaje_B);
-                        Personaje_B.Salud -= DProvocado;
-                        Personaje_B.Energia -= DProvocado/3;
+                        DProvocado = Atacar(Pers_A, Pers_B, true);
+                        Pers_B.Salud -= DProvocado;
+                        Pers_B.Energia -= DProvocado/3;
                         turno = true;                        
                     break;
 
                     case 2:
-                        if (Personaje_A.Semillas > 0)
+                        if (Pers_A.Semillas > 0)
                         {
-                            UsarSemilla(Personaje_A, true);
+                            UsarSemilla(Pers_A, true);
                             turno = true;
                         } else Console.WriteLine("\n No hay semillas disponibles\n");
                         Thread.Sleep(1500);
                         break;
 
                     case 3:
-                        Personaje_B.Mostrar();
+                        Pers_B.Mostrar();
                         Enter();
                     break;
 
                     case 4:
-                        Console.WriteLine("\n" + Personaje_A.Nombre + " se rinde. ");
-                        Personaje_A.Salud = 0;
+                        Console.WriteLine("\n" + Pers_A.Nombre + " se rinde. ");
+                        Pers_A.Salud = 0;
                         Thread.Sleep(1500);
                     break;
                 }
             }
 
-            if (Personaje_B.Salud > 0 && turno)
+            if (Pers_B.Salud > 0 && turno)
             {
-                DProvocado = CPMove(Personaje_B, Personaje_A, true);
+                DProvocado = CPMove(Pers_B, Pers_A, true);
 
-                Personaje_A.Salud -= DProvocado;
-                Personaje_A.Energia -= DProvocado/3;
+                Pers_A.Salud -= DProvocado;
+                Pers_A.Energia -= DProvocado/3;
 
                 turno = false;
             }
@@ -244,14 +307,16 @@ internal class Program
             
         }
 
-        if (Personaje_A.Salud <= 0)
+        if (Pers_A.Salud <= 0)
         {
-            Ganador = Personaje_B;
-        } else Ganador = Personaje_A;
+            Ganador = Pers_B;
+        } else
+            {
+                Ganador = Pers_A;
+                win = true;
+            }
 
-        Console.Clear();
-        Console.WriteLine ("-- " +Personaje_A.Nombre + " --   Salud: " + Personaje_A.Salud + "   Energia: " + Personaje_A.Energia);
-        Console.WriteLine ("\n-- " + Personaje_B.Nombre + " -- Salud: " + Personaje_B.Salud + "   Energia: " + Personaje_B.Energia);
+        Valores(Pers_A, Pers_B);
 
 
         Console.WriteLine("\n\n El ganador es: " + (Ganador.Nombre));
@@ -260,7 +325,14 @@ internal class Program
 
     }
 
-    static int Atacar (Personaje Pers_A, Personaje Pers_B)
+    static void Valores(Personaje Pers_A, Personaje Pers_B)
+    {
+        Console.Clear();
+        Console.WriteLine ("-- " +Pers_A.Nombre + " --   Salud: " + Pers_A.Salud + "   Energia: " + Pers_A.Energia);
+        Console.WriteLine ("\n-- " + Pers_B.Nombre + " -- Salud: " + Pers_B.Salud + "   Energia: " + Pers_B.Energia);
+    }
+
+    static int Atacar (Personaje Pers_A, Personaje Pers_B, bool ver)
     {
         var seed = Environment.TickCount;
         Random rnd = new Random(seed);
@@ -271,9 +343,11 @@ internal class Program
         const int ajuste = 1000;
 
         int DProvocado = (((ataque*efectividad) - defensa)/ajuste) + Pers_A.Energia/10;
-
-        Console.WriteLine(Pers_A.Nombre + " realiza un ataque quitando "+ DProvocado + " puntos de salud a su oponente\n");
-        Thread.Sleep(2000);
+        if (ver)
+        {
+            Console.WriteLine("\n" + Pers_A.Nombre + " realiza un ataque quitando "+ DProvocado + " puntos de salud a su oponente\n");
+            Thread.Sleep(2000);
+        }
         return DProvocado;
     }
 
@@ -294,10 +368,8 @@ internal class Program
 
         if (turno)
         {
-            DProvocado = Atacar(Pers_A, Pers_B);
+            DProvocado = Atacar(Pers_A, Pers_B, ver);
         }
-
-        Console.WriteLine(DProvocado);
 
         return DProvocado;
 
@@ -307,11 +379,84 @@ internal class Program
     {   
         if(ver)
         {
-            Console.WriteLine("\n" + Pers.Nombre + " utiliza una semilla del ermitaño y recupera su salud por completo\n");
+            Console.WriteLine(Pers.Nombre + " utiliza una semilla del ermitaño y recupera su salud por completo\n");
         }
+        RecSalud(Pers);
+
+        Pers.Semillas -= 1;
+    }
+
+    static void RecSalud(Personaje Pers)
+    {
         Pers.Salud = 100;
         Pers.Energia = 100;
-        Pers.Semillas -= 1;
+    }
+
+
+    static bool ComvsCom(Personaje Pers_A, Personaje Pers_B, bool ver, string fase)
+    {
+        Personaje Ganador;
+        int DProvocado = 0;
+        bool win = false;
+
+        Fase(fase, Pers_A, Pers_B, ver);
+        Thread.Sleep(2300);
+
+        while(Pers_A.Salud > 0 && Pers_B.Salud > 0)
+        {
+            if(ver)
+            {
+                Valores(Pers_A, Pers_B);
+            }
+
+            DProvocado = CPMove(Pers_A, Pers_A, ver);
+            Pers_B.Salud -= DProvocado;
+            Pers_B.Energia -= DProvocado/3;
+
+            if (Pers_B.Salud > 0)
+            {
+                DProvocado = CPMove(Pers_B, Pers_A, ver);
+
+                Pers_A.Salud -= DProvocado;
+                Pers_A.Energia -= DProvocado/3;
+            }
+
+        }
+
+        if (Pers_A.Salud <= 0)
+        {
+            Ganador = Pers_B;
+        } else
+            {
+                Ganador = Pers_A;
+                win = true;
+            }
+
+        if (ver)
+        {
+            Valores(Pers_A, Pers_B);
+        }
+        Console.WriteLine("\nEl ganador es: " + (Ganador.Nombre));
+        Thread.Sleep(2000);
+        return win;
+    }
+
+    static List<Personaje> ComFases (List<Personaje> Personajes, bool ver, string fase)
+    {
+        for(int i=1; i<Personajes.Count; i++)
+        {
+            if(ComvsCom(Personajes[i], Personajes[i+1], ver, fase))
+            {
+                Personajes.RemoveAt(i+1);
+                RecSalud(Personajes[i]);
+            } else
+                {
+                    Personajes.RemoveAt(i);
+                    RecSalud(Personajes[i]);
+                }
+        }
+
+        return Personajes;
     }
 
 }
