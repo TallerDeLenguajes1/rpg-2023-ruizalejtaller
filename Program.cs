@@ -1,4 +1,6 @@
 ﻿using EspPersonaje;
+using System.Net;
+using System.Text.Json;
 internal class Program
 {
     private static void Main(string[] args)
@@ -8,7 +10,36 @@ internal class Program
         string[] Fases = {"Octavos de final", "Cuartos de final", "Semifinal", "Final"};
         string str;
         int op, fase = 0;
-        bool cont = true;
+        int temp, fav = 6;
+        bool cont = true, ver = true;
+
+        temp = Get();
+
+        Console.Clear();
+
+        if (temp!=0)
+        {
+            if(temp<=15)
+            {
+                Favorece(temp,"fresco", "Ice");
+                fav = 2;
+            }
+
+            if(temp>15 && temp <=25)
+            {
+                Favorece(temp, "templado", "Humana");
+                fav = 4;
+            }
+
+            if(temp>25)
+            {
+                Favorece(temp, "caluroso", "Namek");
+                fav = 1;
+            }
+
+        } else Console.WriteLine("No se pudo acceder al clima via api");
+
+        Enter();
 
         if(Datos.Existe("Personajes.json"))
         {
@@ -29,28 +60,52 @@ internal class Program
             } else Personajes = Datos.LeerPersonajes("Personajes.json");
         }
 
+        for(int i=0; i<Personajes.Count; i++)
+        {
+            if(Personajes[i].Tipo == (Razas)fav)
+            {
+                Personajes[i].SaludInicial += 20;
+                Personajes[i].Salud +=20;
+            }
+        }
+
         Console.WriteLine("Personaje seleccionado");
         Console.WriteLine("----------------------");
         Personajes[0].Mostrar();
+
+        Console.WriteLine("\nVer la informacion de los demas personajes ? (s/n)");
+        str = Console.ReadLine();
+
+        if (str.ToLower() == "s")
+        {
+            for(int i=1; i<Personajes.Count; i++)
+            {
+                Console.Clear();
+                Console.WriteLine("Personaje N: " + (i+1));
+                Console.WriteLine("----------------------");
+                Personajes[i].Mostrar();
+                Thread.Sleep(2000);
+            }
+        }
 
         while (fase<4 && cont)
         {
             Fase(Fases[fase], Personajes[0], Personajes[1], true);
             Enter();
         
-            if(Combate(Personajes[0], Personajes[1]))
+            if(Combate(Personajes[0], Personajes[1], fase))
             {
                 Personajes.RemoveAt(1);
-                RecSalud(Personajes[0]);
+                Personajes[0].Ganador(fase);
                 cont = true;
 
                 if (fase == 3)
                 {
                     Console.WriteLine("\n////////////////////");
-                    Console.WriteLine("//// " + Personajes[0].Nombre + " es el Campeon del Torneo de las Artes Marciales ////");
-                    Console.WriteLine("/////////////////////");
+                    Console.WriteLine("//// " + Personajes[0].Nombre + " es el Campeon del Torneo de las Artes Marciales !!!");
+                    Console.WriteLine("////////////////////");
+                    Console.WriteLine("\n///////          Felicitaciones        ///////////");
                 } else {
-                    Console.WriteLine("es la fase "+ fase);
                     Console.WriteLine("\n\n--------------------------------------------------");
                     Console.WriteLine("1. Presenciar los encuentros restantes de la fase");
                     Console.WriteLine("2. Ver los ganadores directamente");
@@ -63,11 +118,11 @@ internal class Program
                         switch(op)
                         {
                             case 1:
-                                Personajes = ComFases(Personajes, true, Fases[fase]);
+                                cont = true; ver = true;
                             break;
 
                             case 2:
-                                Personajes = ComFases(Personajes, false, Fases[fase]);
+                                cont = true; ver = false;
                             break;
                             
                             default:
@@ -78,6 +133,12 @@ internal class Program
                 }
             } else cont = false;
 
+            if(cont && fase<4)
+            {
+                Console.WriteLine("\nFase: " + Fases[fase]);
+                Console.WriteLine("----------------------");
+                Personajes = ComFases(Personajes, ver, fase, Fases);
+            }
             fase++;
 
             if (cont && fase<4)
@@ -223,6 +284,13 @@ internal class Program
         return Personaje;
     }
 
+    static void Favorece(int temp,string clima, string raza)
+    {
+        Console.WriteLine($"La temperatura es de {temp} grados...");
+        Console.WriteLine($"Un clima {clima} que favorece a los luchadores de la raza {raza}\n");
+        Console.WriteLine("El Torneo está a punto de comenzar...");
+    }
+
     static void Fase(string fase, Personaje Pers_A, Personaje Pers_B, bool ver)
     {
         if (ver)
@@ -243,19 +311,24 @@ internal class Program
         Console.Clear();
     }
 
-    static bool Combate(Personaje Pers_A, Personaje Pers_B)
+    static bool Combate(Personaje Pers_A, Personaje Pers_B, int fase)
     {
         Personaje Ganador;
         int DProvocado = 0;
         string str;
         int op;
-        bool win = false, turno = false;
+        bool win = false, turno = false, transfor = false;
+
+        if (Pers_A.Tipo!=(Razas)3 && Pers_A.Tipo!=(Razas)4)
+        {
+            transfor = true;
+        }
 
         while (Pers_A.Salud > 0 && Pers_B.Salud > 0)
         {
             Valores(Pers_A, Pers_B);
 
-            Console.WriteLine ("\n\n\n1. Atacar   2. Usar Semilla    3. Info Oponente   4. Rendirse\n");
+            Console.WriteLine ($"\n\n\n1. Atacar   2. Semilla    3. Info   4. Info Rival   5. Rendirse  {(transfor? "6. Transformarse":"")}");
             str = Console.ReadLine();
             
 
@@ -266,7 +339,14 @@ internal class Program
                     case 1:
                         DProvocado = Atacar(Pers_A, Pers_B, true);
                         Pers_B.Salud -= DProvocado;
-                        Pers_B.Energia -= DProvocado/3;
+                        Pers_B.Energia -= DProvocado/4;
+                        if(Pers_A.Estado) Pers_A.Energia -= 50; 
+                        if (Pers_A.Energia < 60 && Pers_A.Estado)
+                        {
+                            Pers_A.Transfor();
+                            Console.WriteLine(Pers_A.Nombre + " pierde su transformacion por desgaste de energia");
+                            Thread.Sleep(1000);
+                        }
                         turno = true;                        
                     break;
 
@@ -278,26 +358,42 @@ internal class Program
                         } else Console.WriteLine("\n No hay semillas disponibles\n");
                         Thread.Sleep(1500);
                         break;
-
+                    
                     case 3:
-                        Pers_B.Mostrar();
+                        Console.Clear();
+                        Pers_A.Mostrar();
                         Enter();
                     break;
 
                     case 4:
+                        Console.Clear();
+                        Pers_B.Mostrar();
+                        Enter();
+                    break;
+
+                    case 5:
                         Console.WriteLine("\n" + Pers_A.Nombre + " se rinde. ");
                         Pers_A.Salud = 0;
                         Thread.Sleep(1500);
+                    break;
+
+                    case 6:
+                        if (transfor)
+                        {
+                            Transformarse(Pers_A, true);
+                            Thread.Sleep(1000);
+                            turno = true;
+                        }
                     break;
                 }
             }
 
             if (Pers_B.Salud > 0 && turno)
             {
-                DProvocado = CPMove(Pers_B, Pers_A, true);
+                DProvocado = CPMove(Pers_B, Pers_A, true, fase);
 
                 Pers_A.Salud -= DProvocado;
-                Pers_A.Energia -= DProvocado/3;
+                Pers_A.Energia -= DProvocado/4;
 
                 turno = false;
             }
@@ -313,6 +409,7 @@ internal class Program
         } else
             {
                 Ganador = Pers_A;
+                if(Pers_A.Estado) Pers_A.Transfor();
                 win = true;
             }
 
@@ -351,24 +448,49 @@ internal class Program
         return DProvocado;
     }
 
-    static int CPMove (Personaje Pers_A, Personaje Pers_B, bool ver)
+    static int CPMove (Personaje Pers_A, Personaje Pers_B, bool ver, int fase)
     {
         int DProvocado = 0;
         var seed = Environment.TickCount;
         Random rnd = new Random(seed);
-        int prob = rnd.Next(1,(100-Pers_A.Salud)+1);
+        int maxValue = ((100+(fase*20))-Pers_A.Salud);
+
+        if (maxValue<1) maxValue = 2;
+
+        int prob = rnd.Next(1, maxValue);
+        int transf = rnd.Next(1, 100);
         bool turno = true;
 
-        if (Pers_A.Semillas > 0 && prob > 50)
+        if (Pers_A.Tipo!=(Razas)3 && Pers_A.Tipo!=(Razas)4)
+        {
+            if (transf>20 && transf<80 && Pers_A.Energia > 70 && !Pers_A.Estado)
+            {
+                Transformarse(Pers_A, ver);
+                turno = false;
+            }
+        }
+
+
+        if (Pers_A.Semillas > 0 && prob > 50 && turno)
         {
             UsarSemilla(Pers_A, ver);
-            Thread.Sleep(1500);
             turno = false;
         }
 
         if (turno)
         {
             DProvocado = Atacar(Pers_A, Pers_B, ver);
+            if(Pers_A.Estado) Pers_A.Energia -= 50; 
+            if (Pers_A.Energia < 60 && Pers_A.Estado)
+            {
+                Pers_A.Transfor();
+                if (ver)
+                {
+                    Console.WriteLine(Pers_A.Nombre + " pierde su transformacion por desgaste de energia");
+                    Thread.Sleep(1000);
+                }
+            }
+
         }
 
         return DProvocado;
@@ -379,7 +501,8 @@ internal class Program
     {   
         if(ver)
         {
-            Console.WriteLine(Pers.Nombre + " utiliza una semilla del ermitaño y recupera su salud por completo\n");
+            Console.WriteLine("\n" + Pers.Nombre + " utiliza una semilla del ermitaño y recupera su salud por completo\n");
+            Thread.Sleep(1500);
         }
         RecSalud(Pers);
 
@@ -393,13 +516,13 @@ internal class Program
     }
 
 
-    static bool ComvsCom(Personaje Pers_A, Personaje Pers_B, bool ver, string fase)
+    static bool ComvsCom(Personaje Pers_A, Personaje Pers_B, bool ver, int fase, string[] fases)
     {
         Personaje Ganador;
         int DProvocado = 0;
         bool win = false;
 
-        Fase(fase, Pers_A, Pers_B, ver);
+        Fase(fases[fase], Pers_A, Pers_B, ver);
         Thread.Sleep(2300);
 
         while(Pers_A.Salud > 0 && Pers_B.Salud > 0)
@@ -409,16 +532,16 @@ internal class Program
                 Valores(Pers_A, Pers_B);
             }
 
-            DProvocado = CPMove(Pers_A, Pers_A, ver);
+            DProvocado = CPMove(Pers_A, Pers_A, ver, fase);
             Pers_B.Salud -= DProvocado;
-            Pers_B.Energia -= DProvocado/3;
+            Pers_B.Energia -= DProvocado/4;
 
             if (Pers_B.Salud > 0)
             {
-                DProvocado = CPMove(Pers_B, Pers_A, ver);
+                DProvocado = CPMove(Pers_B, Pers_A, ver, fase);
 
                 Pers_A.Salud -= DProvocado;
-                Pers_A.Energia -= DProvocado/3;
+                Pers_A.Energia -= DProvocado/4;
             }
 
         }
@@ -441,22 +564,77 @@ internal class Program
         return win;
     }
 
-    static List<Personaje> ComFases (List<Personaje> Personajes, bool ver, string fase)
+    static List<Personaje> ComFases (List<Personaje> Personajes, bool ver, int fase, string[] fases)
     {
         for(int i=1; i<Personajes.Count; i++)
         {
-            if(ComvsCom(Personajes[i], Personajes[i+1], ver, fase))
+            if(ComvsCom(Personajes[i], Personajes[i+1], ver, fase, fases))
             {
                 Personajes.RemoveAt(i+1);
-                RecSalud(Personajes[i]);
+                Personajes[i].Ganador(fase);
             } else
                 {
                     Personajes.RemoveAt(i);
-                    RecSalud(Personajes[i]);
+                    Personajes[i].Ganador(fase);
                 }
         }
 
         return Personajes;
     }
+
+    static void Transformarse(Personaje Pers, bool ver)
+    {
+        bool seguir = true;
+
+        if(Pers.Energia > 70 && !Pers.Estado)
+        {
+            Pers.Transfor();
+            if (ver)
+            {
+                Console.WriteLine("\n" + Pers.Nombre + " se transforma incrementando sus poderes...");
+                Thread.Sleep(1500);
+            }
+            seguir = false;
+        }
+
+        if(Pers.Estado && seguir)
+        {   
+            Pers.Transfor();
+            Console.WriteLine("\n" + Pers.Nombre + " vuelve a su estado base.");
+        }
+    }
+
+    
+    static int Get()
+    {
+        var url = $"https://api.open-meteo.com/v1/forecast?latitude=-26.81&longitude=-65.21&current_weather=true";
+        var request = (HttpWebRequest)WebRequest.Create(url);
+        request.Method = "GET";
+        request.ContentType = "application/json";
+        request.Accept = "application/json";
+
+        try
+        {
+            using (WebResponse response = request.GetResponse())
+            {
+                using (Stream strReader = response.GetResponseStream())
+                {
+                    if (strReader != null)
+                    using (StreamReader objReader = new StreamReader(strReader))
+                    {
+                        string responseBody = objReader.ReadToEnd();
+                        var clima = JsonSerializer.Deserialize<Weather>(responseBody);
+
+                        return (int)clima.current_weather.temperature;
+
+                    } else return 0;
+                }
+            }
+        } catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            return 0;
+        }
+    } 
 
 }

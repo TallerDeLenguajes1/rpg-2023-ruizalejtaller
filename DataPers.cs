@@ -21,7 +21,7 @@ class Sayayin
 
 class Namekiano
 {
-    private string[] nombres = {"Piccolo", "Nail", "Slug", "Saonel", "Pilina"};
+    private string[] nombres = {"Piccolo", "Nail", "Slug", "Saonel", "Katatz"};
     private int[] anionac = {753, 762, 261, 760, 758};
 
     public string[] Nombres { get => nombres; }

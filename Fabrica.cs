@@ -81,6 +81,7 @@ class FabricaDePersonajes
                 Personaje.Edad = (773 - Humano.Anionac[dado2]);
             break;
         }
+        Personaje.SaludInicial = 100;
         Personaje.Salud = 100;
         Personaje.Energia = 100;
         Personaje.Semillas = rnd.Next(1,3);
