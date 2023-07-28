@@ -58,7 +58,11 @@ internal class Program
                     Datos.GuardarPersonajes("Personajes.json", Personajes);
                 } else Personajes = Datos.LeerPersonajes("Personajes.json");
             } else Personajes = Datos.LeerPersonajes("Personajes.json");
-        }
+        } else
+            {
+                Personajes = Generar();
+                Datos.GuardarPersonajes("Personajes.json", Personajes);
+            }
 
         for(int i=0; i<Personajes.Count; i++)
         {
